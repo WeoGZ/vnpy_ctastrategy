@@ -55,4 +55,5 @@ INTERVAL_DELTA_MAP: dict[Interval, timedelta] = {
     Interval.MINUTE: timedelta(minutes=1),
     Interval.HOUR: timedelta(hours=1),
     Interval.DAILY: timedelta(days=1),
+    Interval.MINUTE5: timedelta(minutes=5),
 }
