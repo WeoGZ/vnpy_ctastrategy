@@ -8,6 +8,7 @@ from typing import cast, Any
 from collections.abc import Callable
 from functools import lru_cache, partial
 import traceback
+import os
 
 import numpy as np
 from pandas import DataFrame, Series
@@ -405,7 +406,7 @@ class BacktestingEngine:
                 ewm_window: ExponentialMovingWindow = df["return"].ewm(halflife=self.half_life)
                 ewm_mean: Series = ewm_window.mean() * 100
                 ewm_std: Series = ewm_window.std() * 100
-                ewm_sharpe = ((ewm_mean - daily_risk_free) / ewm_std)[-1] * np.sqrt(self.annual_days)
+                ewm_sharpe = ((ewm_mean - daily_risk_free) / ewm_std).iloc[-1] * np.sqrt(self.annual_days)
             else:
                 sharpe_ratio = 0
                 ewm_sharpe = 0
@@ -987,7 +988,7 @@ class BacktestingEngine:
         """
         Output message of backtesting engine.
         """
-        print(f"{datetime.now()}\t{msg}")
+        print(f"{datetime.now()}\t[{os.getpid()}]\t{msg}")
 
     def get_all_trades(self) -> list:
         """
