@@ -67,6 +67,7 @@ class DoubleMaStrategy(CtaTemplate):
         am = self.am
         am.update_bar(bar)
         if not am.inited:
+            # print('**error return')
             return
 
         fast_ma = am.sma(self.fast_window, array=True)
@@ -79,6 +80,7 @@ class DoubleMaStrategy(CtaTemplate):
 
         cross_over = self.fast_ma0 > self.slow_ma0 and self.fast_ma1 < self.slow_ma1
         cross_below = self.fast_ma0 < self.slow_ma0 and self.fast_ma1 > self.slow_ma1
+        # print(f'--{bar.datetime}\tfast_ma={fast_ma[-1]}\tslow_ma={slow_ma[-1]}')
 
         if cross_over:
             if self.pos == 0:

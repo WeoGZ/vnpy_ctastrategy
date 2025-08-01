@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from vnpy_ctastrategy import (
     CtaTemplate,
     StopOrder,
@@ -8,6 +10,7 @@ from vnpy_ctastrategy import (
     BarGenerator,
     ArrayManager,
 )
+from vnpy.trader.constant import Exchange, Interval
 
 
 class BollChannelStrategy(CtaTemplate):
@@ -56,7 +59,7 @@ class BollChannelStrategy(CtaTemplate):
         """
         self.write_log("策略初始化")
 
-        self.bg = BarGenerator(self.on_bar, 15, self.on_15min_bar)
+        self.bg = BarGenerator(self.on_bar, 15, self.on_15min_bar, Interval.MINUTE5)
         self.am = ArrayManager()
 
         self.load_bar(10)
@@ -84,9 +87,11 @@ class BollChannelStrategy(CtaTemplate):
         Callback of new bar data update.
         """
         self.bg.update_bar(bar)
+        # print(f"{datetime.now()}\t更新K线{bar.datetime}")
 
     def on_15min_bar(self, bar: BarData) -> None:
         """"""
+        # print(f"{datetime.now()}\ton_15min_bar\t{bar.datetime}")
         self.cancel_all()
 
         am = self.am
@@ -104,8 +109,12 @@ class BollChannelStrategy(CtaTemplate):
 
             if self.cci_value > 0:
                 self.buy(self.boll_up, self.fixed_size, True)
+                print(f'--开多：{bar.datetime}\tboll_up={self.boll_up}\tboll_down={self.boll_down}\tcci={self.cci_value}'
+                      f'\tatr={self.atr_value}')
             elif self.cci_value < 0:
                 self.short(self.boll_down, self.fixed_size, True)
+                print(f'--开空：{bar.datetime}\tboll_up={self.boll_up}\tboll_down={self.boll_down}\tcci={self.cci_value}'
+                      f'\tatr={self.atr_value}')
 
         elif self.pos > 0:
             self.intra_trade_high = max(self.intra_trade_high, bar.high_price)
@@ -113,6 +122,8 @@ class BollChannelStrategy(CtaTemplate):
 
             self.long_stop = self.intra_trade_high - self.atr_value * self.sl_multiplier
             self.sell(self.long_stop, abs(self.pos), True)
+            print(f'--平多：{bar.datetime}\tlong_stop={self.long_stop}\tintra_trade_high={self.intra_trade_high}'
+                  f'\tatr={self.atr_value}')
 
         elif self.pos < 0:
             self.intra_trade_high = bar.high_price
@@ -120,6 +131,8 @@ class BollChannelStrategy(CtaTemplate):
 
             self.short_stop = self.intra_trade_low + self.atr_value * self.sl_multiplier
             self.cover(self.short_stop, abs(self.pos), True)
+            print(f'--平空：{bar.datetime}\tshort_stop={self.short_stop}\tintra_trade_low={self.intra_trade_low}'
+                  f'\tatr={self.atr_value}')
 
         self.put_event()
 

@@ -146,18 +146,18 @@ class BacktestingEngine:
 
         if not end:
             end = datetime.now()
-        self.end = end.replace(hour=23, minute=59, second=59)
+        self.end = end.replace(hour=15, minute=0, second=0)
 
         self.mode = mode
         self.risk_free = risk_free
         self.annual_days = annual_days
         self.half_life = half_life
 
-    def add_strategy(self, strategy_class: type[CtaTemplate], setting: dict) -> None:
+    def add_strategy(self, strategy_class: type[CtaTemplate], setting: dict, minuteWindow: int = 60) -> None:
         """"""
         self.strategy_class = strategy_class
         self.strategy = strategy_class(
-            self, strategy_class.__name__, self.vt_symbol, setting
+            self, strategy_class.__name__, self.vt_symbol, setting, minuteWindow
         )
 
     def load_data(self) -> None:
@@ -648,13 +648,13 @@ class BacktestingEngine:
             # Check whether limit orders can be filled.
             long_cross: bool = (
                 order.direction == Direction.LONG
-                and order.price >= long_cross_price
+                # and order.price >= long_cross_price
                 and long_cross_price > 0
             )
 
             short_cross: bool = (
                 order.direction == Direction.SHORT
-                and order.price <= short_cross_price
+                # and order.price <= short_cross_price
                 and short_cross_price > 0
             )
 
