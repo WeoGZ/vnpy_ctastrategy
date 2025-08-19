@@ -63,7 +63,7 @@ class WS12Strategy(CtaTemplate):
         self.kline_len_per_day = self.cal_kline_len_single_day()
         # kline_len = max(self.len, self.kline_len_per_day * self.n) + 2000  # 指标管理器计算所需K线数量，多预留2000根
         kline_len = 2 * 244 * self.kline_len_per_day  # 指标管理器计算所需K线数量，此处设为缓存2年数据（一年约244个交易日）
-        self.am = ArrayManager(kline_len, self.cta_engine.start)
+        self.am = ArrayManager(kline_len, self.cta_engine)
 
         # 全局变量初始化
         self.in_trade_list = np.zeros(kline_len)  # 记录是否处于交易当中
@@ -169,14 +169,16 @@ class WS12Strategy(CtaTemplate):
         # self.printData('_op_s', _op_s.iloc[-5:])
         self.printData('_op', _op.iloc[-5:])
         self.printData('dk', dk[-5:])
+        self.printData('in_trade_list', self.in_trade_list[-5:])
 
-        if bar.datetime.strftime("%Y-%m-%d %H:%M:%S") == '2024-09-20 11:15:00':
+        if bar.datetime.strftime("%Y-%m-%d %H:%M:%S") == '2024-01-05 14:15:00':
             print()
 
-        if self.pos == 0:
+        if (self.trading and self.pos == 0 and self.virtual_pos == 0) or (not self.trading and self.virtual_pos == 0):
             bkcon = _op_l.iloc[-1] == 0 and _zd[-1] == 0
             skcon = _op_s.iloc[-1] == 0 and _zd[-1] == 0
-            print(f'========== pos==0 ==========')
+            print(f'========== pos==0 ==========' if self.trading else
+                  f'========== virtual_pos={self.virtual_pos} ==========')
             print(f'bkcon={bkcon}, skcon={skcon}')
             if bkcon:
                 self.buy(bar.close_price, self.fixed_size, False)
@@ -187,7 +189,7 @@ class WS12Strategy(CtaTemplate):
                 self.in_trade_list[-1] = 1
                 print(f'卖开 {bar.datetime}')
 
-        elif self.pos != 0:
+        elif (self.trading and (self.pos != 0 or self.virtual_pos != 0)) or (not self.trading and self.virtual_pos != 0):
             open_p = _op.iloc[-1]
             stbar = 40
             """JP:=IF(DK=1,HV(L,OPEN_P),IF(DK=-1,LV(H,OPEN_P),NULL))"""
@@ -201,12 +203,13 @@ class WS12Strategy(CtaTemplate):
             out_price = self.cta_round(sum_amt / sum_vol)
             vwap = vp.iloc[-1] if open_p >= stbar else out_price
 
-            print(f'========== pos!=0 ==========')
+            print(f'========== pos!=0 ==========' if self.trading else
+                  f'========== virtual_pos={self.virtual_pos} ==========')
             self.printData('jp', jp.iloc[-5:])
             print(f'>>open_p={open_p}')
             print(f'>>vwap={vwap}')
 
-            if self.pos > 0:
+            if (self.trading and (self.pos > 0 or self.virtual_pos > 0)) or (not self.trading and self.virtual_pos > 0):
                 # 转震荡平仓
                 spcon = _zd[-2] == 0 and _zd[-1] == 1 and dk[-1] == 1
                 if spcon:
@@ -220,7 +223,7 @@ class WS12Strategy(CtaTemplate):
                     self.in_trade_list[-1] = 0
                     print(f'卖平 {bar.datetime}')
 
-            elif self.pos < 0:
+            elif (self.trading and (self.pos < 0 or self.virtual_pos < 0)) or (not self.trading and self.virtual_pos < 0):
                 # 转震荡平仓
                 bpcon = _zd[-2] == 0 and _zd[-1] == 1 and dk[-1] == -1
                 if bpcon:

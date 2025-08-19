@@ -31,6 +31,7 @@ class CtaTemplate(ABC):
         self.inited: bool = False
         self.trading: bool = False
         self.pos: int = 0
+        self.virtual_pos: int = 0  # 虚拟仓位。用于动态记录回测开始日期以前预加载数据的仓位
 
         # Copy a new variables list here to avoid duplicate insert when multiple
         # strategy instances are created with the same strategy class.
@@ -241,8 +242,15 @@ class CtaTemplate(ABC):
             vt_orderids: list = self.cta_engine.send_order(
                 self, direction, offset, price, volume, stop, lock, net
             )
+            if self.virtual_pos != 0:
+                self.virtual_pos = 0
             return vt_orderids
         else:
+            # 虚拟仓位计算（主要用于回测开始日期以前）
+            if direction == Direction.LONG:
+                self.virtual_pos += 1
+            elif direction == Direction.SHORT:
+                self.virtual_pos -= 1
             return []
 
     def cancel_order(self, vt_orderid: str) -> None:

@@ -26,6 +26,7 @@ from vnpy.trader.constant import (
 from vnpy.trader.database import get_database, BaseDatabase
 from vnpy.trader.object import OrderData, TradeData, BarData, TickData
 from vnpy.trader.utility import round_to, extract_vt_symbol
+from vnpy.trader.common_util import getAllTradeDate, getNextTradeDate
 from vnpy.trader.optimize import (
     OptimizationSetting,
     check_optimization_setting,
@@ -95,6 +96,8 @@ class BacktestingEngine:
         self.daily_results: dict[Date, DailyResult] = {}
         self.daily_df: DataFrame
 
+        self.allTradeDates : list = []  # 所有交易日期
+
     def clear_data(self) -> None:
         """
         Clear all data of last backtesting.
@@ -127,7 +130,8 @@ class BacktestingEngine:
         mode: BacktestingMode = BacktestingMode.BAR,
         risk_free: float = 0,
         annual_days: int = 240,
-        half_life: int = 120
+        half_life: int = 120,
+        pre_load_month = 2  # start之前预计算的月份长度，用于计算开始日期之前的信号状态，避免开始日期计算出假信号（部分策略逻辑可能如此）
     ) -> None:
         """"""
         self.mode = mode
@@ -152,6 +156,10 @@ class BacktestingEngine:
         self.risk_free = risk_free
         self.annual_days = annual_days
         self.half_life = half_life
+        self.pre_load_month = pre_load_month
+
+        self.allTradeDates = getAllTradeDate(self.symbol, self.exchange, datetime(1900, 1, 1),
+                                    datetime(2100, 12, 31))
 
     def add_strategy(self, strategy_class: type[CtaTemplate], setting: dict, minuteWindow: int = 60) -> None:
         """"""
@@ -260,6 +268,8 @@ class BacktestingEngine:
         # Add trade data into daily reuslt.
         for trade in self.trades.values():
             d: Date = trade.datetime.date()
+            if trade.datetime.hour > 15:  # 夜盘归到下一个交易日
+                d = getNextTradeDate(trade.datetime, self.allTradeDates).date()
             daily_result: DailyResult = self.daily_results[d]
             daily_result.add_trade(trade)
 
@@ -595,6 +605,10 @@ class BacktestingEngine:
     def update_daily_close(self, price: float) -> None:
         """"""
         d: Date = self.datetime.date()
+        if self.datetime.strftime("%Y-%m-%d %H:%M:%S") == '2024-01-23 21:00:00':
+            print()
+        if self.datetime.hour > 15:  # 夜盘归到下一个交易日
+            d = getNextTradeDate(self.datetime, self.allTradeDates).date()
 
         daily_result: DailyResult | None = self.daily_results.get(d, None)
         if daily_result:
