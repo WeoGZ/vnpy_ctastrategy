@@ -3,6 +3,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+from numba import njit, prange
 
 from vnpy_ctastrategy import (
     CtaTemplate,
@@ -94,6 +95,7 @@ class WS12Strategy(CtaTemplate):
         """
         self.bg.update_bar(bar, 1)
 
+    @njit
     def on_min_bar(self, bar: BarData) -> None:
         """"""
         self.cancel_all()
@@ -154,25 +156,25 @@ class WS12Strategy(CtaTemplate):
                 dk[i] = dk[i - 1]
 
         print(f'\n>>>>>>datetime={bar.datetime}')
-        self.printData('close_array', close_array[-5:])
-        # self.printData('low_array', low_array[-5:])
-        # self.printData('high_array', high_array[-5:])
-        self.printData('vol_array', vol_array[-5:])
-        self.printData('_zd', _zd[-5:])
-        # self.printData('buy_v', buy_v.iloc[-5:])
-        # self.printData('sell_v'， sell_v.iloc[-5:])
-        self.printData('_bsr', _bsr.iloc[-5:])
-        # self.printData('_bsl', _bsl.iloc[-5:])
-        self.printData('_mbl', _mbl.iloc[-5:])
-        self.printData('_msl', _msl.iloc[-5:])
-        # self.printData('_op_l', _op_l.iloc[-5:])
-        # self.printData('_op_s', _op_s.iloc[-5:])
-        self.printData('_op', _op.iloc[-5:])
-        self.printData('dk', dk[-5:])
-        self.printData('in_trade_list', self.in_trade_list[-5:])
+        # self.printData('close_array', close_array[-5:])
+        # # self.printData('low_array', low_array[-5:])
+        # # self.printData('high_array', high_array[-5:])
+        # self.printData('vol_array', vol_array[-5:])
+        # self.printData('_zd', _zd[-5:])
+        # # self.printData('buy_v', buy_v.iloc[-5:])
+        # # self.printData('sell_v'， sell_v.iloc[-5:])
+        # self.printData('_bsr', _bsr.iloc[-5:])
+        # # self.printData('_bsl', _bsl.iloc[-5:])
+        # self.printData('_mbl', _mbl.iloc[-5:])
+        # self.printData('_msl', _msl.iloc[-5:])
+        # # self.printData('_op_l', _op_l.iloc[-5:])
+        # # self.printData('_op_s', _op_s.iloc[-5:])
+        # self.printData('_op', _op.iloc[-5:])
+        # self.printData('dk', dk[-5:])
+        # self.printData('in_trade_list', self.in_trade_list[-5:])
 
-        if bar.datetime.strftime("%Y-%m-%d %H:%M:%S") == '2024-01-05 14:15:00':
-            print()
+        # if bar.datetime.strftime("%Y-%m-%d %H:%M:%S") == '2024-01-05 14:15:00':
+        #     print()
 
         if (self.trading and self.pos == 0 and self.virtual_pos == 0) or (not self.trading and self.virtual_pos == 0):
             bkcon = _op_l.iloc[-1] == 0 and _zd[-1] == 0
@@ -296,6 +298,7 @@ class WS12Strategy(CtaTemplate):
             len_min = self.minuteWindow / 5  # 策略指定分钟周期相对于5分钟的倍数
             return math.ceil(max(kline_len_per_day) / len_min)
 
+    @njit
     def get_zd(self):
         """获取是否为震荡"""
         close_array = self.am.close
