@@ -199,6 +199,10 @@ class WS12Strategy(CtaTemplate):
             vp = self.cta_round(jp * (1 - self.stpr / 1000 if dk[-1] == 1 else 1 + self.stpr / 1000))
             cn = open_p
             sum_vol = pd.Series(vol_array).iloc[-cn:].sum()
+            print(f'----parameters={self.get_parameters()}; vp.shape={vp.shape}')
+            if vp.shape[0] != vol_array[-cn:].shape[0]:
+                print(f'----shape1={vol_array[-cn:].shape}')
+                return
             sum_amt = self.cta_round((pd.Series(vol_array[-cn:] * vp.tolist())).sum())
             out_price = self.cta_round(sum_amt / sum_vol)
             vwap = vp.iloc[-1] if open_p >= stbar else out_price
