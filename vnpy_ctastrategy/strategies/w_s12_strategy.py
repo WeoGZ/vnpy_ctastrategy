@@ -274,16 +274,27 @@ class WS12Strategy(CtaTemplate):
             False
         )  # 可以多取几天，防止长假的情况
         if bars:
+            # 不同品种的起始交易时间不同，夜盘品种是21:00:00、日盘品种是9:00:00或9:30:00
+            start_hour = 9
+            start_minute = 0
+            # 判断是否有夜盘K线
+            night_bars: list[BarData] = [bar for bar in bars if bar.datetime.hour >= 21]
+            day_minutes: list[int] = [bar.datetime.minute for bar in bars if bar.datetime.hour == 9]
+            if len(night_bars) > 0:
+                start_hour = 21
+            elif len(day_minutes) > 0:
+                start_minute = min(day_minutes)
+
             cal_day = 3  # 取最近3个交易日
             already_cal_day = 0
             kline_len_per_day: list[int] = []
             start_index = -1
             end_index = -1
-            for i in range(len(bars) - 1, -1, -1):
+            for i in range(len(bars) - 1, 0, -1):
                 if bars[i].datetime.hour == 14 and bars[i].datetime.minute == 55 and bars[i].datetime.second == 0:
                     end_index = i
-                elif (bars[i].datetime.hour == 21 and bars[i].datetime.minute == 0 and bars[i].datetime.second == 0
-                      and end_index != -1):
+                elif (bars[i].datetime.hour == start_hour and bars[i].datetime.minute == start_minute and
+                      bars[i].datetime.second == 0 and end_index != -1):
                     start_index = i
                 if start_index != -1 and end_index != -1:
                     already_cal_day = already_cal_day + 1
